@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
 import socket
 import time
+from multiprocessing import Process
 
 #define address & buffer size
 HOST = ""
 PORT = 8001
 BUFFER_SIZE = 1024
+
+def handle_connection(conn, addr):
+    print("Connected by", addr)
+    #recieve data, wait a bit, then send it back
+    full_data = conn.recv(BUFFER_SIZE)
+    time.sleep(0.5)
+    conn.sendall(full_data)
+    conn.shutdown(socket.SHUT_RDWR)
+    conn.close()
 
 def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -21,13 +31,9 @@ def main():
         #continuously listen for connections
         while True:
             conn, addr = s.accept()
-            print("Connected by", addr)
-            
-            #recieve data, wait a bit, then send it back
-            full_data = conn.recv(BUFFER_SIZE)
-            time.sleep(0.5)
-            conn.sendall(full_data)
-            conn.close()
+            p = Process(target=handle_connection, args=(conn,addr,), daemon=True)
+            p.start()
+            p.join()
 
 if __name__ == "__main__":
     main()
